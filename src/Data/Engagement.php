@@ -36,8 +36,7 @@ class Engagement
     /**
      * Create an Engagement from an API response array.
      *
-     * @param array $data API response data
-     * @return self
+     * @param  array  $data  API response data
      */
     public static function fromArray(array $data): self
     {
@@ -57,8 +56,6 @@ class Engagement
 
     /**
      * Convert to array representation.
-     *
-     * @return array
      */
     public function toArray(): array
     {

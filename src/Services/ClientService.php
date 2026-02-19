@@ -23,7 +23,7 @@ class ClientService
     /**
      * Create a new client service instance.
      *
-     * @param ApiClient $api The API client
+     * @param  ApiClient  $api  The API client
      */
     public function __construct(ApiClient $api)
     {
@@ -33,8 +33,9 @@ class ClientService
     /**
      * Resolve a client_id to its client_KEY.
      *
-     * @param string $clientId The client ID (e.g. "12345")
+     * @param  string  $clientId  The client ID (e.g. "12345")
      * @return int|null The client_KEY, or null if not found
+     *
      * @throws PracticeCsException
      */
     public function resolveClientKey(string $clientId): ?int
@@ -49,8 +50,9 @@ class ClientService
     /**
      * Find a client by client_id.
      *
-     * @param string $clientId The client ID
+     * @param  string  $clientId  The client ID
      * @return Client|null Client DTO or null if not found
+     *
      * @throws PracticeCsException
      */
     public function findByClientId(string $clientId): ?Client
@@ -74,10 +76,11 @@ class ClientService
     /**
      * Search clients by name, client_id, or tax_id.
      *
-     * @param string $query Search query string
-     * @param string $searchType One of: 'name', 'client_id', 'tax_id'
-     * @param int $limit Maximum number of results
+     * @param  string  $query  Search query string
+     * @param  string  $searchType  One of: 'name', 'client_id', 'tax_id'
+     * @param  int  $limit  Maximum number of results
      * @return Client[] Array of Client DTOs
+     *
      * @throws PracticeCsException
      */
     public function search(string $query, string $searchType = 'name', int $limit = 20): array
@@ -89,7 +92,7 @@ class ClientService
         ]);
 
         return array_map(
-            fn(array $item) => Client::fromArray($item),
+            fn (array $item) => Client::fromArray($item),
             $response['data']['results'] ?? []
         );
     }
@@ -97,8 +100,9 @@ class ClientService
     /**
      * Get client names for a batch of client IDs.
      *
-     * @param array $clientIds Array of client ID strings
+     * @param  array  $clientIds  Array of client ID strings
      * @return array Associative array of client_id => client_name
+     *
      * @throws PracticeCsException
      */
     public function getNames(array $clientIds): array
@@ -113,8 +117,9 @@ class ClientService
     /**
      * Get a single client's name.
      *
-     * @param string $clientId The client ID
+     * @param  string  $clientId  The client ID
      * @return string|null The client name, or null if not found
+     *
      * @throws PracticeCsException
      */
     public function getName(string $clientId): ?string
@@ -125,14 +130,18 @@ class ClientService
     }
 
     /**
-     * Look up a client by last 4 of tax ID and last name.
+     * Look up clients by last 4 of tax ID and last name.
      *
-     * @param string $last4 Last 4 digits of federal TIN
-     * @param string $lastName Last name to match
-     * @return Client|null Client DTO or null if not found
+     * Returns the multi-client lookup structure from the API, which includes
+     * all matching clients and convenience fields for single-match cases.
+     *
+     * @param  string  $last4  Last 4 digits of federal TIN
+     * @param  string  $lastName  Last name to match
+     * @return array{clients: array[], client_KEY: int|null, client_id: string|null, client_name: string|null}|null Null if no matches found
+     *
      * @throws PracticeCsException
      */
-    public function findByTaxIdAndName(string $last4, string $lastName): ?Client
+    public function findByTaxIdAndName(string $last4, string $lastName): ?array
     {
         try {
             $response = $this->api->get('/api/clients/lookup', [
@@ -140,11 +149,13 @@ class ClientService
                 'last_name' => $lastName,
             ]);
 
-            if (empty($response['data'])) {
+            $data = $response['data'] ?? [];
+
+            if (empty($data['clients'])) {
                 return null;
             }
 
-            return Client::fromArray($response['data']);
+            return $data;
         } catch (PracticeCsException $e) {
             if ($e->getStatusCode() === 404) {
                 return null;
@@ -156,9 +167,10 @@ class ClientService
     /**
      * Get a client's outstanding balance.
      *
-     * @param int|null $clientKey The client_KEY
-     * @param string|null $clientId The client_id (alternative lookup)
+     * @param  int|null  $clientKey  The client_KEY
+     * @param  string|null  $clientId  The client_id (alternative lookup)
      * @return Balance Balance DTO
+     *
      * @throws PracticeCsException
      */
     public function getBalance(?int $clientKey = null, ?string $clientId = null): Balance
@@ -179,8 +191,9 @@ class ClientService
     /**
      * Get a client's primary email address.
      *
-     * @param string $clientId The client ID
+     * @param  string  $clientId  The client ID
      * @return string|null Email address or null if not found
+     *
      * @throws PracticeCsException
      */
     public function getEmail(string $clientId): ?string
@@ -193,8 +206,9 @@ class ClientService
     /**
      * Get emails for a batch of client IDs.
      *
-     * @param array $clientIds Array of client ID strings
+     * @param  array  $clientIds  Array of client ID strings
      * @return array Associative array of client_id => email
+     *
      * @throws PracticeCsException
      */
     public function getEmailsBatch(array $clientIds): array

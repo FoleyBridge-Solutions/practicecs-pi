@@ -35,8 +35,6 @@ trait HasPracticeCs
      * Get the PracticeCS client_id for this model.
      *
      * Override this method if your model uses a different column name.
-     *
-     * @return string
      */
     public function getPracticecsClientId(): string
     {
@@ -45,8 +43,6 @@ trait HasPracticeCs
 
     /**
      * Get the PracticeCS client data for this model.
-     *
-     * @return Client|null
      */
     public function getPracticecsClient(): ?Client
     {
@@ -57,8 +53,6 @@ trait HasPracticeCs
 
     /**
      * Get the PracticeCS balance for this model's client.
-     *
-     * @return Balance
      */
     public function getPracticecsBalance(): Balance
     {
@@ -81,8 +75,6 @@ trait HasPracticeCs
 
     /**
      * Get the PracticeCS client email for this model.
-     *
-     * @return string|null
      */
     public function getPracticecsEmail(): ?string
     {

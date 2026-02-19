@@ -22,7 +22,7 @@ class InvoiceService
     /**
      * Create a new invoice service instance.
      *
-     * @param ApiClient $api The API client
+     * @param  ApiClient  $api  The API client
      */
     public function __construct(ApiClient $api)
     {
@@ -32,9 +32,10 @@ class InvoiceService
     /**
      * Get open invoices for a client.
      *
-     * @param int|null $clientKey The client_KEY
-     * @param string|null $clientId The client_id (alternative lookup)
+     * @param  int|null  $clientKey  The client_KEY
+     * @param  string|null  $clientId  The client_id (alternative lookup)
      * @return Invoice[] Array of Invoice DTOs
+     *
      * @throws PracticeCsException
      */
     public function getOpenInvoices(?int $clientKey = null, ?string $clientId = null): array
@@ -50,7 +51,7 @@ class InvoiceService
         $response = $this->api->get('/api/invoices/open', $query);
 
         return array_map(
-            fn(array $item) => Invoice::fromArray($item),
+            fn (array $item) => Invoice::fromArray($item),
             $response['data'] ?? []
         );
     }
@@ -61,10 +62,11 @@ class InvoiceService
      * Returns raw PracticeCS data. Filtering against local project_acceptances
      * should be done in the consuming application (TR-Pay).
      *
-     * @param int|null $clientKey The client_KEY
-     * @param array $clientInfo Client information for group resolution
-     * @param string|null $clientId The client_id (alternative lookup)
+     * @param  int|null  $clientKey  The client_KEY
+     * @param  array  $clientInfo  Client information for group resolution
+     * @param  string|null  $clientId  The client_id (alternative lookup)
      * @return array Raw grouped invoice data from the API
+     *
      * @throws PracticeCsException
      */
     public function getGroupedInvoices(?int $clientKey, array $clientInfo, ?string $clientId = null): array

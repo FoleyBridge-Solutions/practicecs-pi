@@ -14,8 +14,7 @@ class ConnectionException extends PracticeCsException
      *
      * Use when the PracticeCS API does not respond within the configured timeout period.
      *
-     * @param string $url The API endpoint URL that timed out.
-     * @return self
+     * @param  string  $url  The API endpoint URL that timed out.
      */
     public static function timeout(string $url): self
     {
@@ -28,8 +27,7 @@ class ConnectionException extends PracticeCsException
      * Use when the PracticeCS API actively refuses the TCP connection
      * (e.g. the service is down or the port is not listening).
      *
-     * @param string $url The API endpoint URL that refused the connection.
-     * @return self
+     * @param  string  $url  The API endpoint URL that refused the connection.
      */
     public static function refused(string $url): self
     {

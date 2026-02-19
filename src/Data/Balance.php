@@ -22,8 +22,7 @@ class Balance
     /**
      * Create a Balance from an API response array.
      *
-     * @param array $data API response data
-     * @return self
+     * @param  array  $data  API response data
      */
     public static function fromArray(array $data): self
     {
@@ -36,8 +35,6 @@ class Balance
 
     /**
      * Convert to array representation.
-     *
-     * @return array
      */
     public function toArray(): array
     {
