@@ -1,0 +1,42 @@
+{
+    "name": "foleybridgesolutions/practicecs-pi",
+    "description": "PracticeCS Programming Interface - Laravel client for the PracticeCS API",
+    "version": "1.0.0",
+    "keywords": ["laravel", "practicecs", "api-client", "accounting", "practice-management"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "FoleyBridge Solutions",
+            "email": "dev@foleybridgesolutions.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "illuminate/support": "^10.0|^11.0|^12.0",
+        "illuminate/http": "^10.0|^11.0|^12.0",
+        "guzzlehttp/guzzle": "^7.2"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.0|^9.0|^10.0",
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "FoleyBridgeSolutions\\PracticeCsPI\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "FoleyBridgeSolutions\\PracticeCsPI\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "FoleyBridgeSolutions\\PracticeCsPI\\PracticeCsServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
