@@ -32,4 +32,12 @@ class LedgerWriteException extends PracticeCsException
     {
         return new self("Invoice application failed: {$reason}", 0, null, 422, $responseBody);
     }
+
+    /**
+     * Create a new exception for a failed payment reversal.
+     */
+    public static function reversalFailed(int $ledgerEntryKey, string $reason, ?array $responseBody = null): self
+    {
+        return new self("Payment reversal failed for ledger_entry_KEY {$ledgerEntryKey}: {$reason}", 0, null, 422, $responseBody);
+    }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FoleyBridgeSolutions\PracticeCsPI\Services;
 
 use FoleyBridgeSolutions\PracticeCsPI\Data\LedgerEntry;
+use FoleyBridgeSolutions\PracticeCsPI\Events\PaymentReversed;
 use FoleyBridgeSolutions\PracticeCsPI\Events\PaymentWriteFailed;
 use FoleyBridgeSolutions\PracticeCsPI\Events\PaymentWritten;
 use FoleyBridgeSolutions\PracticeCsPI\Exceptions\LedgerWriteException;
@@ -14,7 +15,8 @@ use FoleyBridgeSolutions\PracticeCsPI\Exceptions\PracticeCsException;
  * Ledger write operations against the PracticeCS API.
  *
  * Maps to PracticeCsPaymentWriter methods in TR-Pay.
- * Handles writing payments, memos, and deferred payments to PracticeCS.
+ * Handles writing payments, memos, and deferred payments to PracticeCS,
+ * as well as reversing (deleting) payments on ACH returns.
  *
  * Note: allocateToInvoices(), updatePlanTracking(), settlePlanTracking(),
  * and revertPlanTracking() operate on local PaymentPlan models and stay in TR-Pay.
@@ -147,6 +149,58 @@ class LedgerService
      */
     public function writeDeferredPayment(array $deferredData): LedgerEntry
     {
+        // Defensively cast numeric-string KEY fields to integers.
+        // The sqlsrv PDO driver and Laravel's env() can return these as strings,
+        // but PracticeCS expects integer keys throughout.
+        $intKeys = ['client_KEY', 'staff_KEY', 'bank_account_KEY', 'ledger_type_KEY', 'subtype_KEY'];
+        if (isset($deferredData['payment']) && is_array($deferredData['payment'])) {
+            foreach ($intKeys as $key) {
+                if (isset($deferredData['payment'][$key]) && is_numeric($deferredData['payment'][$key])) {
+                    $deferredData['payment'][$key] = (int) $deferredData['payment'][$key];
+                }
+            }
+
+            // Defensively cast reference to string (payment gateway APIs may return integer transaction IDs)
+            if (isset($deferredData['payment']['reference']) && ! is_string($deferredData['payment']['reference'])) {
+                $deferredData['payment']['reference'] = (string) $deferredData['payment']['reference'];
+            }
+
+            // Also cast ledger_entry_KEY in invoice allocations
+            if (! empty($deferredData['payment']['invoices'])) {
+                foreach ($deferredData['payment']['invoices'] as &$invoice) {
+                    if (isset($invoice['ledger_entry_KEY']) && is_numeric($invoice['ledger_entry_KEY'])) {
+                        $invoice['ledger_entry_KEY'] = (int) $invoice['ledger_entry_KEY'];
+                    }
+                }
+                unset($invoice);
+            }
+        }
+
+        // Also cast KEY fields in group_distribution entries
+        if (! empty($deferredData['group_distribution'])) {
+            foreach ($deferredData['group_distribution'] as &$group) {
+                foreach (['credit_memo', 'debit_memo'] as $memoType) {
+                    if (isset($group[$memoType]) && is_array($group[$memoType])) {
+                        foreach ($intKeys as $key) {
+                            if (isset($group[$memoType][$key]) && is_numeric($group[$memoType][$key])) {
+                                $group[$memoType][$key] = (int) $group[$memoType][$key];
+                            }
+                        }
+                    }
+                }
+
+                if (! empty($group['invoices'])) {
+                    foreach ($group['invoices'] as &$invoice) {
+                        if (isset($invoice['ledger_entry_KEY']) && is_numeric($invoice['ledger_entry_KEY'])) {
+                            $invoice['ledger_entry_KEY'] = (int) $invoice['ledger_entry_KEY'];
+                        }
+                    }
+                    unset($invoice);
+                }
+            }
+            unset($group);
+        }
+
         $this->validateDeferredPaymentData($deferredData);
 
         $payment = $deferredData['payment'];
@@ -206,6 +260,55 @@ class LedgerService
             return $response['data'] ?? [];
         } catch (PracticeCsException $e) {
             throw LedgerWriteException::applicationFailed(
+                $e->getMessage(),
+                $e->getResponseBody()
+            );
+        }
+    }
+
+    /**
+     * Reverse (delete) a payment and all associated records from PracticeCS.
+     *
+     * Removes the payment ledger entry plus all dependent records:
+     * Billing_Decision_Collection, Ledger_Entry_Application, Online_Payment,
+     * and any group distribution credit/debit memos.
+     *
+     * @param  int  $ledgerEntryKey  The ledger_entry_KEY of the payment to reverse
+     * @param  int  $staffKey  The staff_KEY performing the reversal
+     * @return array Deletion counts per table
+     *
+     * @throws LedgerWriteException
+     * @throws PracticeCsException
+     */
+    public function reversePayment(int $ledgerEntryKey, int $staffKey): array
+    {
+        if ($ledgerEntryKey <= 0) {
+            throw new \InvalidArgumentException(
+                'reversePayment: ledgerEntryKey must be a positive integer'
+            );
+        }
+
+        if ($staffKey <= 0) {
+            throw new \InvalidArgumentException(
+                'reversePayment: staffKey must be a positive integer'
+            );
+        }
+
+        try {
+            $response = $this->api->delete("/api/ledger/payments/{$ledgerEntryKey}?staff_KEY={$staffKey}");
+
+            $data = $response['data'] ?? [];
+
+            PaymentReversed::dispatch(
+                $ledgerEntryKey,
+                $staffKey,
+                $data['deleted'] ?? []
+            );
+
+            return $data;
+        } catch (PracticeCsException $e) {
+            throw LedgerWriteException::reversalFailed(
+                $ledgerEntryKey,
                 $e->getMessage(),
                 $e->getResponseBody()
             );

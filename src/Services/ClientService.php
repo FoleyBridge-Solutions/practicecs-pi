@@ -219,4 +219,125 @@ class ClientService
 
         return $response['data'] ?? [];
     }
+
+    /**
+     * Get group members for a client.
+     *
+     * Returns the group name and all other clients in the same group,
+     * or null if the client is not part of any group.
+     *
+     * @param  string  $clientId  The client ID
+     * @return array{group_name: string, members: array[]}|null Group data or null if not in a group
+     *
+     * @throws PracticeCsException
+     */
+    public function getGroupMembers(string $clientId): ?array
+    {
+        try {
+            $response = $this->api->get("/api/clients/{$clientId}/group");
+
+            return $response['data'] ?? null;
+        } catch (PracticeCsException $e) {
+            if ($e->getStatusCode() === 404) {
+                return null;
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Add a client to a group (or create a new group).
+     *
+     * If the client already belongs to a group, they are moved to the new one.
+     *
+     * @param  string  $clientId  The client ID
+     * @param  string  $groupName  The group name to assign
+     * @return array{group_name: string} The assigned group data
+     *
+     * @throws PracticeCsException
+     */
+    public function addToGroup(string $clientId, string $groupName): array
+    {
+        $response = $this->api->post("/api/clients/{$clientId}/group", [
+            'group_name' => $groupName,
+        ]);
+
+        return $response['data'];
+    }
+
+    /**
+     * Remove a client from their group.
+     *
+     * @param  string  $clientId  The client ID
+     * @return bool True if successfully removed
+     *
+     * @throws PracticeCsException
+     */
+    public function removeFromGroup(string $clientId): bool
+    {
+        $this->api->delete("/api/clients/{$clientId}/group");
+
+        return true;
+    }
+
+    /**
+     * Rename a client group.
+     *
+     * Updates all clients in the group with the new name.
+     *
+     * @param  string  $oldName  Current group name
+     * @param  string  $newName  New group name
+     * @return array{updated: int, group_name: string} Update result
+     *
+     * @throws PracticeCsException
+     */
+    public function renameGroup(string $oldName, string $newName): array
+    {
+        $response = $this->api->put('/api/clients/group/rename', [
+            'old_name' => $oldName,
+            'new_name' => $newName,
+        ]);
+
+        return $response['data'];
+    }
+
+    /**
+     * List all existing client group names with member counts.
+     *
+     * @return array[] Array of {group_name: string, member_count: int}
+     *
+     * @throws PracticeCsException
+     */
+    public function listGroups(): array
+    {
+        $response = $this->api->get('/api/clients/groups');
+
+        return $response['data'] ?? [];
+    }
+
+    /**
+     * Get detailed information about a specific group by name.
+     *
+     * Returns the group name, all members with balances, and total balance.
+     *
+     * @param  string  $groupName  The group name to look up
+     * @return array{group_name: string, members: array[], total_balance: float}|null Group data or null if not found
+     *
+     * @throws PracticeCsException
+     */
+    public function getGroup(string $groupName): ?array
+    {
+        try {
+            $response = $this->api->get('/api/clients/groups/show', [
+                'name' => $groupName,
+            ]);
+
+            return $response['data'] ?? null;
+        } catch (PracticeCsException $e) {
+            if ($e->getStatusCode() === 404) {
+                return null;
+            }
+            throw $e;
+        }
+    }
 }
