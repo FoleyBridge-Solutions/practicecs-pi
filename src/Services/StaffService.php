@@ -324,4 +324,54 @@ class StaffService
 
         return $response['data'] ?? [];
     }
+
+    // -----------------------------------------------------------------
+    // Staff Sub-Resources
+    // -----------------------------------------------------------------
+
+    /**
+     * List projects assigned to a staff member.
+     *
+     * @param  int  $staffKey  The staff member's primary key
+     * @param  int  $limit  Maximum results
+     * @param  int  $offset  Offset for pagination
+     * @return array{data: array[], meta: array}
+     *
+     * @throws PracticeCsException
+     */
+    public function staffProjects(int $staffKey, int $limit = 50, int $offset = 0): array
+    {
+        $response = $this->api->get("/api/staff/{$staffKey}/projects", [
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+
+        return [
+            'data' => $response['data'] ?? [],
+            'meta' => $response['meta'] ?? [],
+        ];
+    }
+
+    /**
+     * List schedule entries for a staff member.
+     *
+     * @param  int  $staffKey  The staff member's primary key
+     * @param  int  $limit  Maximum results
+     * @param  int  $offset  Offset for pagination
+     * @return array{data: array[], meta: array}
+     *
+     * @throws PracticeCsException
+     */
+    public function staffScheduleEntries(int $staffKey, int $limit = 50, int $offset = 0): array
+    {
+        $response = $this->api->get("/api/staff/{$staffKey}/schedule-entries", [
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+
+        return [
+            'data' => $response['data'] ?? [],
+            'meta' => $response['meta'] ?? [],
+        ];
+    }
 }

@@ -156,4 +156,57 @@ class InvoiceService
 
         return $response['data'] ?? [];
     }
+
+    /**
+     * Get line items for a specific invoice.
+     *
+     * @param  int  $ledgerEntryKey  The invoice's ledger_entry_KEY
+     * @return array[] Array of raw line item arrays
+     *
+     * @throws PracticeCsException
+     */
+    public function getLineItems(int $ledgerEntryKey): array
+    {
+        $response = $this->api->get("/api/invoices/{$ledgerEntryKey}/line-items");
+
+        return $response['data'] ?? [];
+    }
+
+    /**
+     * Get online invoice data for a specific invoice.
+     *
+     * @param  int  $ledgerEntryKey  The invoice's ledger_entry_KEY
+     * @return array|null The online invoice data, or null if not found
+     *
+     * @throws PracticeCsException
+     */
+    public function getOnlineInvoice(int $ledgerEntryKey): ?array
+    {
+        try {
+            $response = $this->api->get("/api/invoices/{$ledgerEntryKey}/online");
+
+            return $response['data'] ?? null;
+        } catch (PracticeCsException $e) {
+            if ($e->getStatusCode() === 404) {
+                return null;
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Update an invoice.
+     *
+     * @param  int  $ledgerEntryKey  The invoice's ledger_entry_KEY
+     * @param  array  $data  Fields to update
+     * @return Invoice The updated invoice
+     *
+     * @throws PracticeCsException
+     */
+    public function update(int $ledgerEntryKey, array $data): Invoice
+    {
+        $response = $this->api->put("/api/invoices/{$ledgerEntryKey}", $data);
+
+        return Invoice::fromArray($response['data']);
+    }
 }

@@ -480,4 +480,31 @@ class ProjectService
 
         return $response['data']['deleted'] ?? false;
     }
+
+    // -----------------------------------------------------------------
+    // Project Sub-Resources
+    // -----------------------------------------------------------------
+
+    /**
+     * List sheet entries for a project.
+     *
+     * @param  int  $projectKey  The project's primary key
+     * @param  int  $limit  Maximum results
+     * @param  int  $offset  Offset for pagination
+     * @return array{data: array[], meta: array}
+     *
+     * @throws PracticeCsException
+     */
+    public function projectSheetEntries(int $projectKey, int $limit = 50, int $offset = 0): array
+    {
+        $response = $this->api->get("/api/projects/{$projectKey}/sheet-entries", [
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+
+        return [
+            'data' => $response['data'] ?? [],
+            'meta' => $response['meta'] ?? [],
+        ];
+    }
 }

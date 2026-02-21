@@ -6,6 +6,7 @@ namespace FoleyBridgeSolutions\PracticeCsPI\Services;
 
 use FoleyBridgeSolutions\PracticeCsPI\Data\AcceptanceResult;
 use FoleyBridgeSolutions\PracticeCsPI\Data\Engagement;
+use FoleyBridgeSolutions\PracticeCsPI\Data\Project;
 use FoleyBridgeSolutions\PracticeCsPI\Events\EngagementAccepted;
 use FoleyBridgeSolutions\PracticeCsPI\Exceptions\PracticeCsException;
 
@@ -167,5 +168,176 @@ class EngagementService
         ]);
 
         return (bool) ($response['data']['is_expansion'] ?? false);
+    }
+
+    /**
+     * List engagements with optional filters and pagination.
+     *
+     * @param  array  $filters  Optional filters to apply
+     * @param  int  $limit  Maximum number of results to return
+     * @param  int  $offset  Number of results to skip
+     * @return array{data: Engagement[], meta: array}
+     *
+     * @throws PracticeCsException
+     */
+    public function list(array $filters = [], int $limit = 50, int $offset = 0): array
+    {
+        $query = array_merge($filters, [
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+
+        $response = $this->api->get('/api/engagements', $query);
+
+        return [
+            'data' => array_map(
+                fn (array $item) => Engagement::fromArray($item),
+                $response['data'] ?? []
+            ),
+            'meta' => $response['meta'] ?? [],
+        ];
+    }
+
+    /**
+     * Find a single engagement by its key.
+     *
+     * @param  int  $engagementKey  The engagement_KEY to find
+     * @return Engagement|null The engagement, or null if not found
+     *
+     * @throws PracticeCsException
+     */
+    public function find(int $engagementKey): ?Engagement
+    {
+        try {
+            $response = $this->api->get("/api/engagements/{$engagementKey}");
+
+            return Engagement::fromArray($response['data']);
+        } catch (PracticeCsException $e) {
+            if ($e->getStatusCode() === 404) {
+                return null;
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Create a new engagement.
+     *
+     * @param  array  $data  The engagement data to create
+     * @return Engagement The created engagement
+     *
+     * @throws PracticeCsException
+     */
+    public function create(array $data): Engagement
+    {
+        $response = $this->api->post('/api/engagements', $data);
+
+        return Engagement::fromArray($response['data']);
+    }
+
+    /**
+     * Update an existing engagement.
+     *
+     * @param  int  $engagementKey  The engagement_KEY to update
+     * @param  array  $data  The engagement data to update
+     * @return Engagement The updated engagement
+     *
+     * @throws PracticeCsException
+     */
+    public function update(int $engagementKey, array $data): Engagement
+    {
+        $response = $this->api->put("/api/engagements/{$engagementKey}", $data);
+
+        return Engagement::fromArray($response['data']);
+    }
+
+    /**
+     * Delete an engagement.
+     *
+     * @param  int  $engagementKey  The engagement_KEY to delete
+     * @return bool True if the engagement was deleted
+     *
+     * @throws PracticeCsException
+     */
+    public function delete(int $engagementKey): bool
+    {
+        $response = $this->api->delete("/api/engagements/{$engagementKey}");
+
+        return $response['data']['deleted'] ?? false;
+    }
+
+    /**
+     * Get projects for a specific engagement.
+     *
+     * @param  int  $engagementKey  The engagement_KEY to get projects for
+     * @param  int  $limit  Maximum number of results to return
+     * @param  int  $offset  Number of results to skip
+     * @return array{data: array[], meta: array}
+     *
+     * @throws PracticeCsException
+     */
+    public function engagementProjects(int $engagementKey, int $limit = 50, int $offset = 0): array
+    {
+        $response = $this->api->get("/api/engagements/{$engagementKey}/projects", [
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+
+        return [
+            'data' => $response['data'] ?? [],
+            'meta' => $response['meta'] ?? [],
+        ];
+    }
+
+    /**
+     * Get sheet entries for a specific engagement.
+     *
+     * @param  int  $engagementKey  The engagement_KEY to get sheet entries for
+     * @param  int  $limit  Maximum number of results to return
+     * @param  int  $offset  Number of results to skip
+     * @return array{data: array[], meta: array}
+     *
+     * @throws PracticeCsException
+     */
+    public function engagementSheetEntries(int $engagementKey, int $limit = 50, int $offset = 0): array
+    {
+        $response = $this->api->get("/api/engagements/{$engagementKey}/sheet-entries", [
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+
+        return [
+            'data' => $response['data'] ?? [],
+            'meta' => $response['meta'] ?? [],
+        ];
+    }
+
+    /**
+     * List all engagement types.
+     *
+     * @return array The list of engagement types
+     *
+     * @throws PracticeCsException
+     */
+    public function listEngagementTypes(): array
+    {
+        $response = $this->api->get('/api/engagement-types');
+
+        return $response['data'] ?? [];
+    }
+
+    /**
+     * List all engagement templates.
+     *
+     * @return array The list of engagement templates
+     *
+     * @throws PracticeCsException
+     */
+    public function listEngagementTemplates(): array
+    {
+        $response = $this->api->get('/api/engagement-templates');
+
+        return $response['data'] ?? [];
     }
 }

@@ -6,6 +6,10 @@ namespace FoleyBridgeSolutions\PracticeCsPI\Services;
 
 use FoleyBridgeSolutions\PracticeCsPI\Data\Balance;
 use FoleyBridgeSolutions\PracticeCsPI\Data\Client;
+use FoleyBridgeSolutions\PracticeCsPI\Data\Contact;
+use FoleyBridgeSolutions\PracticeCsPI\Data\Engagement;
+use FoleyBridgeSolutions\PracticeCsPI\Data\Invoice;
+use FoleyBridgeSolutions\PracticeCsPI\Data\Project;
 use FoleyBridgeSolutions\PracticeCsPI\Exceptions\PracticeCsException;
 
 /**
@@ -339,5 +343,265 @@ class ClientService
             }
             throw $e;
         }
+    }
+
+    /**
+     * List clients with optional filters and pagination.
+     *
+     * @param  array  $filters  Optional filters to apply
+     * @param  int  $limit  Maximum number of results
+     * @param  int  $offset  Offset for pagination
+     * @return array{data: Client[], meta: array} Paginated client list
+     *
+     * @throws PracticeCsException
+     */
+    public function list(array $filters = [], int $limit = 50, int $offset = 0): array
+    {
+        $response = $this->api->get('/api/clients', array_merge($filters, [
+            'limit' => $limit,
+            'offset' => $offset,
+        ]));
+
+        return [
+            'data' => array_map(
+                fn (array $item) => Client::fromArray($item),
+                $response['data'] ?? []
+            ),
+            'meta' => $response['meta'] ?? [],
+        ];
+    }
+
+    /**
+     * Create a new client.
+     *
+     * @param  array  $data  Client data to create
+     * @return Client The created client
+     *
+     * @throws PracticeCsException
+     */
+    public function create(array $data): Client
+    {
+        $response = $this->api->post('/api/clients', $data);
+
+        return Client::fromArray($response['data']);
+    }
+
+    /**
+     * Update an existing client.
+     *
+     * @param  int  $clientKey  The client_KEY to update
+     * @param  array  $data  Client data to update
+     * @return Client The updated client
+     *
+     * @throws PracticeCsException
+     */
+    public function update(int $clientKey, array $data): Client
+    {
+        $response = $this->api->put("/api/clients/{$clientKey}", $data);
+
+        return Client::fromArray($response['data']);
+    }
+
+    /**
+     * Delete a client.
+     *
+     * @param  int  $clientKey  The client_KEY to delete
+     * @return bool True if the client was deleted
+     *
+     * @throws PracticeCsException
+     */
+    public function delete(int $clientKey): bool
+    {
+        $response = $this->api->delete("/api/clients/{$clientKey}");
+
+        return $response['data']['deleted'] ?? false;
+    }
+
+    /**
+     * Get financial data for a client.
+     *
+     * @param  int  $clientKey  The client_KEY
+     * @param  int|null  $taxYear  Optional tax year filter
+     * @return array Financial data
+     *
+     * @throws PracticeCsException
+     */
+    public function financialData(int $clientKey, ?int $taxYear = null): array
+    {
+        $query = [];
+        if ($taxYear !== null) {
+            $query['tax_year'] = $taxYear;
+        }
+
+        $response = $this->api->get("/api/clients/{$clientKey}/financial-data", $query);
+
+        return $response['data'] ?? [];
+    }
+
+    /**
+     * Get service charge information for a client.
+     *
+     * @param  int  $clientKey  The client_KEY
+     * @return array|null Service charge data or null if not found
+     *
+     * @throws PracticeCsException
+     */
+    public function serviceCharge(int $clientKey): ?array
+    {
+        try {
+            $response = $this->api->get("/api/clients/{$clientKey}/service-charge");
+
+            return $response['data'] ?? null;
+        } catch (PracticeCsException $e) {
+            if ($e->getStatusCode() === 404) {
+                return null;
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Get status events for a client.
+     *
+     * @param  int  $clientKey  The client_KEY
+     * @return array Status events
+     *
+     * @throws PracticeCsException
+     */
+    public function statusEvents(int $clientKey): array
+    {
+        $response = $this->api->get("/api/clients/{$clientKey}/status-events");
+
+        return $response['data'] ?? [];
+    }
+
+    /**
+     * Get staff groupings for a client.
+     *
+     * @param  int  $clientKey  The client_KEY
+     * @return array Staff groupings
+     *
+     * @throws PracticeCsException
+     */
+    public function staffGroupings(int $clientKey): array
+    {
+        $response = $this->api->get("/api/clients/{$clientKey}/staff-groupings");
+
+        return $response['data'] ?? [];
+    }
+
+    /**
+     * Get invoices for a client with pagination.
+     *
+     * @param  int  $clientKey  The client_KEY
+     * @param  int  $limit  Maximum number of results
+     * @param  int  $offset  Offset for pagination
+     * @return array{data: array[], meta: array} Paginated invoice list
+     *
+     * @throws PracticeCsException
+     */
+    public function clientInvoices(int $clientKey, int $limit = 50, int $offset = 0): array
+    {
+        $response = $this->api->get("/api/clients/{$clientKey}/invoices", [
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+
+        return [
+            'data' => $response['data'] ?? [],
+            'meta' => $response['meta'] ?? [],
+        ];
+    }
+
+    /**
+     * Get projects for a client with pagination.
+     *
+     * @param  int  $clientKey  The client_KEY
+     * @param  int  $limit  Maximum number of results
+     * @param  int  $offset  Offset for pagination
+     * @return array{data: array[], meta: array} Paginated project list
+     *
+     * @throws PracticeCsException
+     */
+    public function clientProjects(int $clientKey, int $limit = 50, int $offset = 0): array
+    {
+        $response = $this->api->get("/api/clients/{$clientKey}/projects", [
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+
+        return [
+            'data' => $response['data'] ?? [],
+            'meta' => $response['meta'] ?? [],
+        ];
+    }
+
+    /**
+     * Get engagements for a client with pagination.
+     *
+     * @param  int  $clientKey  The client_KEY
+     * @param  int  $limit  Maximum number of results
+     * @param  int  $offset  Offset for pagination
+     * @return array{data: array[], meta: array} Paginated engagement list
+     *
+     * @throws PracticeCsException
+     */
+    public function clientEngagements(int $clientKey, int $limit = 50, int $offset = 0): array
+    {
+        $response = $this->api->get("/api/clients/{$clientKey}/engagements", [
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+
+        return [
+            'data' => $response['data'] ?? [],
+            'meta' => $response['meta'] ?? [],
+        ];
+    }
+
+    /**
+     * Get ledger entries for a client with pagination.
+     *
+     * @param  int  $clientKey  The client_KEY
+     * @param  int  $limit  Maximum number of results
+     * @param  int  $offset  Offset for pagination
+     * @return array{data: array[], meta: array} Paginated ledger entry list
+     *
+     * @throws PracticeCsException
+     */
+    public function clientLedgerEntries(int $clientKey, int $limit = 50, int $offset = 0): array
+    {
+        $response = $this->api->get("/api/clients/{$clientKey}/ledger-entries", [
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+
+        return [
+            'data' => $response['data'] ?? [],
+            'meta' => $response['meta'] ?? [],
+        ];
+    }
+
+    /**
+     * Get contacts for a client with pagination.
+     *
+     * @param  int  $clientKey  The client_KEY
+     * @param  int  $limit  Maximum number of results
+     * @param  int  $offset  Offset for pagination
+     * @return array{data: array[], meta: array} Paginated contact list
+     *
+     * @throws PracticeCsException
+     */
+    public function clientContacts(int $clientKey, int $limit = 50, int $offset = 0): array
+    {
+        $response = $this->api->get("/api/clients/{$clientKey}/contacts", [
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+
+        return [
+            'data' => $response['data'] ?? [],
+            'meta' => $response['meta'] ?? [],
+        ];
     }
 }
